@@ -1,0 +1,33 @@
+<launch>
+	<!-- LAUNCH INTERFACE -->
+
+	<arg name="use_rviz" default="false" doc="Choose whether you want to launch a previously configured Rviz or not."/>
+	<arg name="use_joint_state_publisher" default="false"/>  <!--FALSE QUANDO USO IL MAIN, valori dei giunti dal guanto/-->
+
+	<!-- LAUNCH IMPLEMENTATION -->
+
+	<!-- firts, the robot description -->
+<!-- 	<param name="robot_description" command="$(find xacro)/xacro.py $(find imu_robotic_glove_publisher)/robot/hand.urdf.xacro left:=$(arg left)" />
+	<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" /> -->
+
+	<!-- joint and robot state publishers -->
+	<group if="$(arg use_joint_state_publisher)">
+		<param name="use_gui" value="true"/>
+		<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher"/>
+	</group>
+	<group unless="$(arg use_joint_state_publisher)">
+		<node name="reactive_grasp_node" pkg="reactive_grasp" type="reactive_grasp_node" respawn="false" output="screen"/>      
+  	</group>
+
+
+
+
+	<!-- whether to use rviz or not -->
+	<group if="$(arg use_rviz)">
+		<node name="my_rviz" pkg="rviz" type="rviz" respawn="false" args="-d $(find imu_glove)/launch/my_rviz.rviz" output="screen"/>
+	</group>
+
+
+
+
+</launch>
