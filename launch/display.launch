@@ -1,6 +1,10 @@
 <launch>
 	<!-- LAUNCH INTERFACE -->
 
+	<rosparam command="load" file="$(find reactive_grasp)/config/parameters.yaml" />
+	<rosparam command="load" file="$(find reactive_grasp)/config/comparison_dataset.yaml" />
+
+
 	<arg name="use_rviz" default="false" doc="Choose whether you want to launch a previously configured Rviz or not."/>
 	<arg name="use_joint_state_publisher" default="false"/>  <!--FALSE QUANDO USO IL MAIN, valori dei giunti dal guanto/-->
 

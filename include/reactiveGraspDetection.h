@@ -70,6 +70,7 @@ struct IMUData
     // Gyroscope data
     std::vector<Sensor> gyro;  
 
+    std::vector<double> abs_contribution;
 };
 
 
@@ -96,12 +97,18 @@ private:
 
    
     
-
     //===============================================================================     Append to Log Files
     void appendToLogFile(std::ofstream *log_file, std::vector<Sensor> data);
 
+    //===============================================================================     Detect Contact
+    int detectContact();
+
     //===============================================================================     Filter Data
     void filterData();
+    bool contact_detected_;
+
+    //===============================================================================     Extract Grasp Primitive
+    std::string extractGraspPrimitive(std::vector<double> data, int imu_id);
 
     //===============================================================================     Init GLove Communication
     void initGloveCommunication();
@@ -113,6 +120,9 @@ private:
     std::vector<IMUData> filtered_data_;    
 
     int samples_;
+    double contact_threshold_;
+    double xcorr_threshold_;
+    int check_sample_;
     int nIMU_;
     // log files
     std::string log_file_name_raw_;
@@ -130,12 +140,22 @@ private:
     std::ofstream log_file_ACC_raw_;
     std::ofstream log_file_ACC_filt_;
 
-   
+    //===============================================================================     Parse Acceleration
+    void parseAccelerationMap();
+    std::map<std::string, std::map<std::string, std::vector<double>>> accel_map_;
+
+    //===============================================================================     To Vector
+    std::vector<double> toVector( int imu_id);
+ 
     //===============================================================================     Update Raw Data
     void updateRawData();
     float dt_;
 
     //===============================================================================     Update Log Files
     void updateLogFiles();
+
+    //===============================================================================     X Corr
+    double xcorr(std::vector<double> x, std::vector<double> v);
+
 
 };

@@ -1,7 +1,6 @@
-clear all 
-close all
 
-FolderName = '../20160606_164600/';
+
+FolderName = '../0_Z_neg_B/';
 File_ACC_raw    = fullfile(FolderName, 'ACC_raw.dat');
 File_ACC_filt   = fullfile(FolderName, 'ACC_filt.dat');
 % File_gyro_raw       = fullfile(FolderName, 'ACC_raw.dat');
@@ -15,11 +14,8 @@ ACC_raw_0 = select_imu(ACC_raw,imu);
 ACC_filt_0 = select_imu(ACC_filt,imu);
 
 
-
-% figure(1);
-hFig = figure(1);
+hFig = figure(2);
 set(hFig, 'Position', [500 500 2000 800])
-
 subplot(2,1,1);
 plot(ACC_raw_0(:,1));
 hold on
