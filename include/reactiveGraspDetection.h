@@ -163,8 +163,11 @@ private:
     ros::Subscriber sub_gyro_;
     Eigen::MatrixXd Acc_;
     Eigen::MatrixXd Gyro_;
+    Eigen::MatrixXd Acc_old_;
+    Eigen::MatrixXd Gyro_old_;
     bool acc_flag_;
     bool gyro_flag_;
+
 
 
     //===============================================================================     Update Raw Data

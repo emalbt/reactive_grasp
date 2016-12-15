@@ -453,9 +453,16 @@ void ReactiveGraspDetection::initGloveCommunication()
 	acc_flag_ = false;
 	gyro_flag_ = false;
 
-	int nimu = 7;
-	Acc_.resize(nimu, 3);
-	Gyro_.resize(nimu, 3);
+	nIMU_ = 7;
+	Acc_.resize(nIMU_, 3);
+	Gyro_.resize(nIMU_, 3);
+	Acc_old_.resize(nIMU_, 3);
+	Gyro_old_.resize(nIMU_, 3);
+
+	Acc_.setZero();
+	Acc_old_.setZero();
+	Gyro_.setZero();
+	Gyro_old_.setZero();
 
 	waitGlove();
 }
@@ -477,8 +484,15 @@ void ReactiveGraspDetection::updateRawData()
 	tmp.gyro.resize(nIMU_);
 	tmp.abs_contribution.resize(nIMU_);
 
+
+	// read glove and record the time between two evetns
+	ros::Time start, stop;
+	start = ros::Time::now();
+	
 	waitGlove();
 
+	stop = ros::Time::now();
+	dt_  = stop.toSec() - start.toSec();
 
 	for(int j=0; j<nIMU_; j++)
 	{
@@ -510,9 +524,15 @@ void ReactiveGraspDetection::updateRawData()
 // =============================================================================================
 void ReactiveGraspDetection::waitGlove()
 {	
+	ros::Rate r(2000);
 	// wait acc and gyro flag 
-	while(!acc_flag_ && !gyro_flag_)
+	do 
+	{
 		ros::spinOnce();
+		r.sleep();
+	}
+	while(!acc_flag_ && !gyro_flag_);
+	
 	acc_flag_ = gyro_flag_ = false;
 }
 
@@ -533,8 +553,11 @@ void ReactiveGraspDetection::callbackAcc(qb_interface::inertialSensorArray imu)
 		// if(i==(int) imu.m.size()-1)
 		// 	std::cout << "\n";
 	}
+	 
+	 if ((Acc_old_ - Acc_).sum() != 0)
+	 	acc_flag_ = true;
 
-	acc_flag_ = true;
+	Acc_old_ = Acc_;
 }
 
 
@@ -549,11 +572,13 @@ void ReactiveGraspDetection::callbackGyro(qb_interface::inertialSensorArray imu)
 		Gyro_(i,0) = imu.m[i].x;
 		Gyro_(i,1) = imu.m[i].y;
 		Gyro_(i,2) = imu.m[i].z;
-
 		// std::cout << i  <<" gyro " << Gyro_(i,0) << "\t" << Gyro_(i,1) << "\t" << Gyro_(i,2) << std::endl;
 		// if(i==(int) imu.m.size()-1)
 		// 	std::cout << "\n";
 	}
 
-	gyro_flag_ = true;
-}
+	if ((Gyro_old_ - Gyro_).sum() != 0)
+	 	gyro_flag_ = true;
+
+	Gyro_old_ = Gyro_;
+}	
