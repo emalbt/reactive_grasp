@@ -51,7 +51,9 @@
 #include <sensor_msgs/JointState.h>
 
 
-#include <IMUboardAPI.h>
+// #include <IMUboardAPI.h>
+#include <qb_interface/inertialSensorArray.h>
+
 
 #define _RECORD_ALL_DATA_ 1
 
@@ -110,10 +112,7 @@ private:
     //===============================================================================     Extract Grasp Primitive
     std::string extractGraspPrimitive(std::vector<double> data, int imu_id);
 
-    //===============================================================================     Init GLove Communication
-    void initGloveCommunication();
-    IMUboardAPI glove_;
- 
+
     //===============================================================================     Init Parameters
     void initParameters();
     std::vector<IMUData> raw_data_; //example: raw_data_[#sample].acc[#imu].x   raw_data_[#sample].gyro[#imu].x
@@ -147,15 +146,39 @@ private:
     //===============================================================================     To Vector
     std::vector<double> toVector( int imu_id);
  
-    //===============================================================================     Update Raw Data
-    void updateRawData();
-    float dt_;
+  
 
     //===============================================================================     Update Log Files
     void updateLogFiles();
 
     //===============================================================================     X Corr
     double xcorr(std::vector<double> x, std::vector<double> v);
+
+
+
+    /****************************** Glove Functions ********************************/
+    //===============================================================================     Init GLove Communication
+    void initGloveCommunication();
+    ros::Subscriber sub_acc_;
+    ros::Subscriber sub_gyro_;
+    Eigen::MatrixXd Acc_;
+    Eigen::MatrixXd Gyro_;
+    bool acc_flag_;
+    bool gyro_flag_;
+
+
+    //===============================================================================     Update Raw Data
+    void updateRawData();
+    float dt_;
+
+    //===============================================================================     Wait Glove 
+    void waitGlove();
+
+    //===============================================================================     CallBack Acc
+    void callbackAcc(qb_interface::inertialSensorArray imu);
+
+    //===============================================================================     CallBack Gyro
+    void callbackGyro(qb_interface::inertialSensorArray imu);
 
 
 };

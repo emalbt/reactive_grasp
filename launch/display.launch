@@ -25,7 +25,6 @@
 
 
 
-
 	<!-- whether to use rviz or not -->
 	<group if="$(arg use_rviz)">
 		<node name="my_rviz" pkg="rviz" type="rviz" respawn="false" args="-d $(find imu_glove)/launch/my_rviz.rviz" output="screen"/>

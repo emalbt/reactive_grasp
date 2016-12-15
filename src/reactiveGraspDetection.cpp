@@ -29,7 +29,7 @@ ReactiveGraspDetection::ReactiveGraspDetection()
 ReactiveGraspDetection::~ReactiveGraspDetection()
 {
 	std::cout << "\n\nInterrupt signal received\n";
-    glove_.stopPSoC(); // Stop Communication
+    // glove_.stopPSoC(); // Stop Communication
 	std::cout << "\n\n\n\r\033[31m\033[1mSHUTDOWN ReactiveGraspDetection\033[0m \r\n\n\n";
 
 	// closes log files if previously opened
@@ -167,7 +167,6 @@ void ReactiveGraspDetection::filterData()
 	tmp.abs_contribution.resize(nIMU_);
 
 
-
 	// first acquisition
 	if(filtered_data_.size()<3)
 	{
@@ -217,23 +216,6 @@ void ReactiveGraspDetection::filterData()
 	}
 }
 
-
-// =========================================================================================================
-//																					Init Glove Communication
-// =========================================================================================================
-void ReactiveGraspDetection::initGloveCommunication()
-{
-	/************************
-	*	    IMUboardAPI		*
-	************************/
-	glove_.p_.port 		= (char*)"/dev/ttyUSB0";
-	glove_.p_.baudRate 	= 1000000;
-	glove_.p_.nIMU		= 17; 															 // XXX DA MODIFICARE PER IL GUANTO PER IL REACTIVE GRASP
-	glove_.p_.byteIMU	= 14; // 14 for acc - gyro; 22 for acc - gyro - mag
-
-	nIMU_ = glove_.p_.nIMU;
-	glove_.initPSoC();	
-}
 
 
 // =========================================================================================================  
@@ -407,54 +389,6 @@ std::vector<double> ReactiveGraspDetection::toVector( int imu_id)
 }
 
 
-// =========================================================================================================
-//																					 	   		 Update Data
-// =========================================================================================================
-void ReactiveGraspDetection::updateRawData()
-{	
-
-	// erase oldest sample
-	if( (int) raw_data_.size()==samples_)
-		raw_data_.erase(raw_data_.begin());
-	
-	IMUData tmp;
-	tmp.acc.resize(nIMU_);
-	tmp.gyro.resize(nIMU_);
-	tmp.abs_contribution.resize(nIMU_);
-
-	// read glove and record the time between two evetns
-	ros::Time start, stop;
-	start = ros::Time::now();
-	
-	glove_.readPSoC();
-
-	stop = ros::Time::now();
-	dt_  = stop.toSec() - start.toSec();
-
-	for(int j=0; j<nIMU_; j++)
-	{
-		tmp.acc[j].x = glove_.Acc_(j,0);
-		tmp.acc[j].y = glove_.Acc_(j,1);
-		tmp.acc[j].z = glove_.Acc_(j,2);
-
-		tmp.gyro[j].x = glove_.Gyro_(j,0);
-		tmp.gyro[j].y = glove_.Gyro_(j,1);
-		tmp.gyro[j].z = glove_.Gyro_(j,2);
-
-		tmp.abs_contribution[j] = std::abs(tmp.acc[j].x) + std::abs(tmp.acc[j].y) + std::abs(tmp.acc[j].z); 
-	}
-
-	// update raw_data
-	raw_data_.push_back(tmp);
-
-	// record all data if required
-	if(_RECORD_ALL_DATA_)
-	{
-		appendToLogFile(&log_file_ACC_raw_, tmp.acc);
-	}
-
-}
-
 
 // =========================================================================================================
 //																					 	    Update Log Files
@@ -500,3 +434,126 @@ double ReactiveGraspDetection::xcorr(std::vector<double> x, std::vector<double> 
 
 
 
+
+/***********************************************************************************************************/
+/*                                                                                                         */
+/*                                                                                                         */
+/*                                            Glove Functions                                              */
+/*                                                                                                         */
+/*                                                                                                         */
+/***********************************************************************************************************/
+// =========================================================================================================
+//																					 	   		 Update Data
+// =========================================================================================================
+void ReactiveGraspDetection::initGloveCommunication()
+{
+	sub_acc_ = node_handle_.subscribe("/qb_class_imu/acc", 100, &ReactiveGraspDetection::callbackAcc, this);
+	sub_gyro_ = node_handle_.subscribe("/qb_class_imu/gyro", 100, &ReactiveGraspDetection::callbackGyro, this);
+
+	acc_flag_ = false;
+	gyro_flag_ = false;
+
+	int nimu = 7;
+	Acc_.resize(nimu, 3);
+	Gyro_.resize(nimu, 3);
+
+	waitGlove();
+}
+
+
+
+// =========================================================================================================
+//																					 	   		 Update Data
+// =========================================================================================================
+void ReactiveGraspDetection::updateRawData()
+{	
+
+	// erase oldest sample
+	if( (int) raw_data_.size()==samples_)
+		raw_data_.erase(raw_data_.begin());
+	
+	IMUData tmp;
+	tmp.acc.resize(nIMU_);
+	tmp.gyro.resize(nIMU_);
+	tmp.abs_contribution.resize(nIMU_);
+
+	waitGlove();
+
+
+	for(int j=0; j<nIMU_; j++)
+	{
+		tmp.acc[j].x = Acc_(j,0);
+		tmp.acc[j].y = Acc_(j,1);
+		tmp.acc[j].z = Acc_(j,2);
+
+		tmp.gyro[j].x = Gyro_(j,0);
+		tmp.gyro[j].y = Gyro_(j,1);
+		tmp.gyro[j].z = Gyro_(j,2);
+
+		tmp.abs_contribution[j] = std::abs(tmp.acc[j].x) + std::abs(tmp.acc[j].y) + std::abs(tmp.acc[j].z); 
+	}
+
+	// update raw_data
+	raw_data_.push_back(tmp);
+
+	// record all data if required
+	if(_RECORD_ALL_DATA_)
+	{
+		appendToLogFile(&log_file_ACC_raw_, tmp.acc);
+	}
+
+}
+
+
+// =============================================================================================
+//                                                                                     waitGlove
+// =============================================================================================
+void ReactiveGraspDetection::waitGlove()
+{	
+	// wait acc and gyro flag 
+	while(!acc_flag_ && !gyro_flag_)
+		ros::spinOnce();
+	acc_flag_ = gyro_flag_ = false;
+}
+
+
+
+// =============================================================================================
+//                                                                                   callbackAcc
+// =============================================================================================
+void ReactiveGraspDetection::callbackAcc(qb_interface::inertialSensorArray imu)
+{
+	for(int i=0; i< (int) imu.m.size(); i++)
+	{
+		Acc_(i,0) = imu.m[i].x;
+		Acc_(i,1) = imu.m[i].y;
+		Acc_(i,2) = imu.m[i].z;
+
+		// std::cout << i  <<" acc " << Acc_(i,0) << "\t" << Acc_(i,1) << "\t" << Acc_(i,2) << std::endl;
+		// if(i==(int) imu.m.size()-1)
+		// 	std::cout << "\n";
+	}
+
+	acc_flag_ = true;
+}
+
+
+
+// =============================================================================================
+//                                                                                  callbackGyro
+// =============================================================================================
+void ReactiveGraspDetection::callbackGyro(qb_interface::inertialSensorArray imu)
+{
+	for(int i=0; i<(int) imu.m.size(); i++)
+	{
+		Gyro_(i,0) = imu.m[i].x;
+		Gyro_(i,1) = imu.m[i].y;
+		Gyro_(i,2) = imu.m[i].z;
+
+		// std::cout << i  <<" gyro " << Gyro_(i,0) << "\t" << Gyro_(i,1) << "\t" << Gyro_(i,2) << std::endl;
+		// if(i==(int) imu.m.size()-1)
+		// 	std::cout << "\n";
+	}
+
+	gyro_flag_ = true;
+}
