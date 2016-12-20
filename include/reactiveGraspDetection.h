@@ -55,7 +55,7 @@
 #include <qb_interface/inertialSensorArray.h>
 
 
-#define _RECORD_ALL_DATA_ 1
+#define _RECORD_ALL_DATA_ 0
 
 struct Sensor
 {

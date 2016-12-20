@@ -55,38 +55,13 @@ void signalHandler( int signum )
 
 int main(int argc, char** argv)
 {	
-
-	/********************
-	*					*
-	*	     ROS		*
-	*					*
-	********************/
 	ros::init(argc, argv, "reactive_grasp", ros::init_options::NoSigintHandler);
   	ros::NodeHandle n;
 
   	// register signal SIGINT (CTRL+C) and signal handler  
     signal(SIGINT, signalHandler);  
 
-	double spin_rate = 100;
-	ros::Rate rate(spin_rate);
-
-
 	ReactiveGraspDetection demo;
-
-	//Press CTRL+C to stop data stream loop
-	/********************
-	*					*
-	*	    LOOP		*
-	*					*
-	********************/
-
-
-	// while(1)
-	// {	
- //       	board.readPSoC();
- //       	rate.sleep();
-	// }	
-
 
 	return 0;
 }

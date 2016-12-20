@@ -1,3 +1,3 @@
-samples: 30
+samples: 40
 contact_threshold: 0.3
-xcorr_threshold: 0.6
+xcorr_threshold: 0.3

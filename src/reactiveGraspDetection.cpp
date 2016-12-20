@@ -132,7 +132,7 @@ std::string ReactiveGraspDetection::extractGraspPrimitive(std::vector<double> da
 		if(pair.second.at("id").front() == imu_id)
 		{	
 	    	xcorr_value = xcorr(data, pair.second.at("samples"));
-	    	xcorr_values_map.insert(std::make_pair(pair.first, xcorr_value));
+	    	xcorr_values_map.insert(std::make_pair(pair.first, std::abs(xcorr_value)));
 	    	local_flag = true;
 		}	
 	}
@@ -156,7 +156,7 @@ void ReactiveGraspDetection::filterData()
 {
 	float f_cut_ = 5;
 	// float dt_ = 0.012;
-	std::cout << "time: "  << dt_ << std::endl;
+	// std::cout << "time: "  << dt_ << std::endl;
 
 	float RC = 1/(2*M_PI*f_cut_);
 	float alpha = RC / (RC+dt_);
